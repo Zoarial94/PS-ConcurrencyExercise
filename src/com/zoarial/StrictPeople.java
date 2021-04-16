@@ -1,80 +1,70 @@
 package com.zoarial;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-// People is more performant than StrictPeople, but doesn't conform to the assignment
-public class People {
-    final private ConcurrentHashMap<String, Person> nameMap;
-    final private ConcurrentHashMap<Integer, Person> idMap;
-    final private ConcurrentHashMap<String, Person> addressMap;
-    final private ConcurrentHashMap<String, Person> phoneMap;
+// StrictPeople conforms to the assignment, but is not as performant.
+public class StrictPeople {
+    final private HashMap<String, Person> nameMap;
+    final private HashMap<Integer, Person> idMap;
+    final private HashMap<String, Person> addressMap;
+    final private HashMap<String, Person> phoneMap;
 
     final private ReentrantReadWriteLock rwlock = new ReentrantReadWriteLock();
 
-    public People() {
-        nameMap = new ConcurrentHashMap<>();
-        idMap = new ConcurrentHashMap<>();
-        addressMap = new ConcurrentHashMap<>();
-        phoneMap = new ConcurrentHashMap<>();
+    public StrictPeople() {
+        nameMap = new HashMap<>();
+        idMap = new HashMap<>();
+        addressMap = new HashMap<>();
+        phoneMap = new HashMap<>();
     }
-    public People(int initialCapacity) {
-        nameMap = new ConcurrentHashMap<>(initialCapacity);
-        idMap = new ConcurrentHashMap<>(initialCapacity);
-        addressMap = new ConcurrentHashMap<>(initialCapacity);
-        phoneMap = new ConcurrentHashMap<>(initialCapacity);
+    public StrictPeople(int initialCapacity) {
+        nameMap = new HashMap<>(initialCapacity);
+        idMap = new HashMap<>(initialCapacity);
+        addressMap = new HashMap<>(initialCapacity);
+        phoneMap = new HashMap<>(initialCapacity);
     }
-    public People(int initialCapacity, float loadFactor) {
-        nameMap = new ConcurrentHashMap<>(initialCapacity, loadFactor);
-        idMap = new ConcurrentHashMap<>(initialCapacity, loadFactor);
-        addressMap = new ConcurrentHashMap<>(initialCapacity, loadFactor);
-        phoneMap = new ConcurrentHashMap<>(initialCapacity, loadFactor);
+    public StrictPeople(int initialCapacity, float loadFactor) {
+        nameMap = new HashMap<>(initialCapacity, loadFactor);
+        idMap = new HashMap<>(initialCapacity, loadFactor);
+        addressMap = new HashMap<>(initialCapacity, loadFactor);
+        phoneMap = new HashMap<>(initialCapacity, loadFactor);
     }
-    public People(int initialCapacity, float loadFactor, int concurrentFactor) {
-        nameMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
-        idMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
-        addressMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
-        phoneMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
-    }
-    public People(People oldPeople) {
+    public StrictPeople(StrictPeople oldPeople) {
         oldPeople.rwlock.readLock().lock();
-        nameMap = new ConcurrentHashMap<>(oldPeople.nameMap);
-        idMap = new ConcurrentHashMap<>(oldPeople.idMap);
-        addressMap = new ConcurrentHashMap<>(oldPeople.addressMap);
-        phoneMap = new ConcurrentHashMap<>(oldPeople.phoneMap);
+        nameMap = new HashMap<>(oldPeople.nameMap);
+        idMap = new HashMap<>(oldPeople.idMap);
+        addressMap = new HashMap<>(oldPeople.addressMap);
+        phoneMap = new HashMap<>(oldPeople.phoneMap);
         oldPeople.rwlock.readLock().unlock();
     }
 
-    // add doesn't need a exclusive lock
-    // the map is thread-safe
     public boolean add(Person p) {
         rwlock.readLock().lock();
         // If there are any duplicates, then don't add the new person.
         boolean hasDuplicate =  nameMap.containsKey(p.getName()) ||
-                idMap.containsKey(p.getId()) ||
-                addressMap.containsKey(p.getAddress()) ||
-                phoneMap.containsKey(p.getPhoneNumber());
+                                idMap.containsKey(p.getId()) ||
+                                addressMap.containsKey(p.getAddress()) ||
+                                phoneMap.containsKey(p.getPhoneNumber());
         rwlock.readLock().unlock();
 
         if(hasDuplicate) {
-            return false;
+           return false;
         }
 
-        rwlock.readLock().lock();
+        rwlock.writeLock().lock();
 
         nameMap.put(p.getName(), p);
         idMap.put(p.getId(), p);
         addressMap.put(p.getAddress(), p);
         phoneMap.put(p.getPhoneNumber(), p);
 
-        rwlock.readLock().unlock();
+        rwlock.writeLock().unlock();
 
         return true;
     }
 
     // Always blocks
-    // remove needs an exclusive lock (write lock)
-    // the lock isn't strictly need, but makes sure you don't reference a Person which is partially deleted
     public boolean remove(Person p) {
         rwlock.readLock().lock();
         boolean hasDuplicate =  nameMap.containsKey(p.getName()) &&

@@ -1,8 +1,29 @@
 package com.zoarial;
 
-public class Main {
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
-    public static <T> void println(T var) {
+public class Main {
+    static Random random = new Random();
+
+    public static String randString(int length) {
+        final int leftLimit = 97; // letter 'a'
+        final int rightLimit = 122; // letter 'z'
+        return random.ints(leftLimit, rightLimit + 1)
+                .limit(length)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
+    }
+    public static String randNumberString(int length) {
+        final int leftLimit = 48; // 0
+        final int rightLimit = 57; // 9
+        return random.ints(leftLimit, rightLimit + 1)
+                .limit(length)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
+    }
+        public static <T> void println(T var) {
         System.out.println(var);
     }
     public static <T> void println() {
@@ -71,6 +92,57 @@ public class Main {
         }
 
         println("Everything has seemed to go smoothly...");
+
+        final int NUM_OF_PEOPLE = 100000;
+        Thread[] threads = new Thread[4];
+
+        HashSet<String> nameSet = new HashSet<>();
+        threads[0] = new Thread(()-> {
+            while(nameSet.size() < NUM_OF_PEOPLE) {
+                nameSet.add(randString(8));
+            }
+        });
+
+        HashSet<Integer> idSet = new HashSet<>();
+        threads[1] = new Thread(()-> {
+            for(int i = 0; i < NUM_OF_PEOPLE; i++) {
+                idSet.add(i);
+            }
+        });
+
+        HashSet<String> addressSet = new HashSet<>();
+        threads[2] = new Thread(()-> {
+            while(addressSet.size() < NUM_OF_PEOPLE) {
+                addressSet.add(randString(32));
+            }
+        });
+
+        HashSet<String> phoneSet = new HashSet<>();
+        threads[3] = new Thread(()-> {
+            while(phoneSet.size() < NUM_OF_PEOPLE) {
+                phoneSet.add(randNumberString(10));
+            }
+        });
+
+        long time = System.currentTimeMillis();
+        println("Starting threads...");
+        for(Thread t : threads) {
+            t.start();
+        }
+
+
+        print("Waiting for threads to finish");
+        for(Thread t : threads) {
+            try {
+                t.join();
+                print(".");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        long newTime = System.currentTimeMillis();
+        println();
+        println("Finished creating sets in: " + (newTime - time) + " milliseconds");
 
     }
 }
