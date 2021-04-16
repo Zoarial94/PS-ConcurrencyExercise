@@ -1,6 +1,8 @@
 package com.zoarial;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 // People is more performant than StrictPeople, but doesn't conform to the assignment
@@ -11,43 +13,45 @@ public class People {
     final private ConcurrentHashMap<String, Person> phoneMap;
 
     final private ReentrantReadWriteLock rwlock = new ReentrantReadWriteLock();
+    final private ExecutorService threadPool;
 
     public People() {
-        nameMap = new ConcurrentHashMap<>();
-        idMap = new ConcurrentHashMap<>();
-        addressMap = new ConcurrentHashMap<>();
-        phoneMap = new ConcurrentHashMap<>();
+        this(32);
     }
     public People(int initialCapacity) {
-        nameMap = new ConcurrentHashMap<>(initialCapacity);
-        idMap = new ConcurrentHashMap<>(initialCapacity);
-        addressMap = new ConcurrentHashMap<>(initialCapacity);
-        phoneMap = new ConcurrentHashMap<>(initialCapacity);
+        this(initialCapacity, 0.75f);
     }
     public People(int initialCapacity, float loadFactor) {
-        nameMap = new ConcurrentHashMap<>(initialCapacity, loadFactor);
-        idMap = new ConcurrentHashMap<>(initialCapacity, loadFactor);
-        addressMap = new ConcurrentHashMap<>(initialCapacity, loadFactor);
-        phoneMap = new ConcurrentHashMap<>(initialCapacity, loadFactor);
+        this(initialCapacity, loadFactor, 16);
     }
     public People(int initialCapacity, float loadFactor, int concurrentFactor) {
         nameMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
         idMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
         addressMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
         phoneMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
+        threadPool = Executors.newFixedThreadPool(concurrentFactor);
     }
+
     public People(People oldPeople) {
+        this(oldPeople, 16);
+    }
+    public People(People oldPeople, int concurrentFactor) {
         oldPeople.rwlock.readLock().lock();
         nameMap = new ConcurrentHashMap<>(oldPeople.nameMap);
         idMap = new ConcurrentHashMap<>(oldPeople.idMap);
         addressMap = new ConcurrentHashMap<>(oldPeople.addressMap);
         phoneMap = new ConcurrentHashMap<>(oldPeople.phoneMap);
+        threadPool = Executors.newFixedThreadPool(concurrentFactor);
         oldPeople.rwlock.readLock().unlock();
+    }
+
+    public void close() {
+        threadPool.shutdownNow();
     }
 
     // add doesn't need a exclusive lock
     // the map is thread-safe
-    public boolean add(Person p) {
+    public boolean add(Person p, boolean block) {
         rwlock.readLock().lock();
         // If there are any duplicates, then don't add the new person.
         boolean hasDuplicate =  nameMap.containsKey(p.getName()) ||
@@ -60,16 +64,30 @@ public class People {
             return false;
         }
 
-        rwlock.readLock().lock();
+        Runnable thread = ()-> {
+            rwlock.readLock().lock();
+            nameMap.put(p.getName(), p);
+            idMap.put(p.getId(), p);
+            addressMap.put(p.getAddress(), p);
+            phoneMap.put(p.getPhoneNumber(), p);
+            rwlock.readLock().unlock();
+        };
 
-        nameMap.put(p.getName(), p);
-        idMap.put(p.getId(), p);
-        addressMap.put(p.getAddress(), p);
-        phoneMap.put(p.getPhoneNumber(), p);
+        Future<?> f = threadPool.submit(thread);
 
-        rwlock.readLock().unlock();
+        if(block) {
+            try {
+                f.get();
+            } catch (ExecutionException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
         return true;
+    }
+
+    public boolean add(Person p) {
+        return add(p, false);
     }
 
     // Always blocks
@@ -165,6 +183,15 @@ public class People {
             return true;
         }
         return false;
+    }
+
+    public void clear() {
+        rwlock.writeLock().lock();
+        nameMap.clear();
+        idMap.clear();
+        addressMap.clear();
+        phoneMap.clear();
+        rwlock.writeLock().unlock();
     }
 
     public Person findByName(String s) {

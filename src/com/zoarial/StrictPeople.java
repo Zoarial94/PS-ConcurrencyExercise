@@ -157,6 +157,15 @@ public class StrictPeople {
         return false;
     }
 
+    public void clear() {
+        rwlock.writeLock().lock();
+        nameMap.clear();
+        idMap.clear();
+        addressMap.clear();
+        phoneMap.clear();
+        rwlock.writeLock().unlock();
+    }
+
     public Person findByName(String s) {
         rwlock.readLock().lock();
         Person ret = nameMap.get(s);
