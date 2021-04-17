@@ -505,7 +505,7 @@ public class Main {
     }
 
     static class Maps {
-        private Thread[] threads = new Thread[4];
+        private final Thread[] threads = new Thread[4];
         private final HashSet<String> nameSet = new HashSet<>();
         private final HashSet<Integer> idSet = new HashSet<>();
         private final HashSet<String> addressSet = new HashSet<>();

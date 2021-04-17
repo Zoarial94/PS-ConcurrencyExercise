@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 // StrictPeople conforms to the assignment, but is not as performant.
+// This class needs locks as the underlying maps (HashMap) are no thread-safe
+// See the class People for more detailed comments
 public class StrictPeople implements PeopleInterface {
     final private HashMap<String, Person> nameMap;
     final private HashMap<Integer, Person> idMap;
@@ -31,6 +33,7 @@ public class StrictPeople implements PeopleInterface {
         phoneMap = new HashMap<>(initialCapacity, loadFactor);
     }
     public StrictPeople(StrictPeople oldPeople) {
+        // Using a readLock is safe here as there are no modifying functions that use a read lock
         oldPeople.rwlock.readLock().lock();
         nameMap = new HashMap<>(oldPeople.nameMap);
         idMap = new HashMap<>(oldPeople.idMap);

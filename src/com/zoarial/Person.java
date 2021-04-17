@@ -1,5 +1,6 @@
 package com.zoarial;
 
+// This class just holds information about one person
 public class Person {
 
     final private String name;

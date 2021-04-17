@@ -1,5 +1,7 @@
 package com.zoarial;
 
+// Person interface decreases the amount of code duplication for testing
+// The People classes are supposed to be thread-safe
 public interface PeopleInterface {
     boolean add(Person p);
     boolean remove(Person p);
