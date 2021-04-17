@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 // StrictPeople conforms to the assignment, but is not as performant.
-public class StrictPeople {
+public class StrictPeople implements PeopleInterface {
     final private HashMap<String, Person> nameMap;
     final private HashMap<Integer, Person> idMap;
     final private HashMap<String, Person> addressMap;

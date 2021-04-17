@@ -6,7 +6,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 // People is more performant than StrictPeople, but doesn't conform to the assignment
-public class People {
+public class People implements PeopleInterface {
     final private ConcurrentHashMap<String, Person> nameMap;
     final private ConcurrentHashMap<Integer, Person> idMap;
     final private ConcurrentHashMap<String, Person> addressMap;
