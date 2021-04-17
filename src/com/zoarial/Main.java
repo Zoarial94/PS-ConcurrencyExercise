@@ -67,6 +67,7 @@ public class Main {
         println("Add People average (" + SINGLE_THREAD_OPTIMISE + " threads): " + addPeopleInterface(new People(NUM_OF_PEOPLE, 0.75f, SINGLE_THREAD_OPTIMISE), ROUNDS));
         println("Add People2 average (1 thread): " + addPeopleInterface(new People2(NUM_OF_PEOPLE, 0.75f, 1), ROUNDS));
         println("Add People2 average (" + SINGLE_THREAD_OPTIMISE + " threads): " + addPeopleInterface(new People2(NUM_OF_PEOPLE, 0.75f, SINGLE_THREAD_OPTIMISE), ROUNDS));
+        println("Remove StrictPeople average: " + removePeopleInterface(new StrictPeople(NUM_OF_PEOPLE, 0.75f), ROUNDS));
         println("Remove People average (1 thread): " + removePeopleInterface(new People(NUM_OF_PEOPLE, 0.75f, 1), ROUNDS));
         println("Remove People average (" + SINGLE_THREAD_OPTIMISE + " threads): " + removePeopleInterface(new People(NUM_OF_PEOPLE, 0.75f, SINGLE_THREAD_OPTIMISE), ROUNDS));
         println("Remove People2 average (1 thread): " + removePeopleInterface(new People2(NUM_OF_PEOPLE, 0.75f, 1), ROUNDS));
