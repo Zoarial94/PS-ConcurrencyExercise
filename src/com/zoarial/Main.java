@@ -1,8 +1,9 @@
 package com.zoarial;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Main {
     static Random random = new Random();
@@ -49,120 +50,714 @@ public class Main {
         StrictPeople strictPeople = new StrictPeople();
         People people = new People();
 
-        final int NUM_OF_PEOPLE = 100000;
-        final int CONCURRENT_FACTOR = 32;
-        Thread[] threads = new Thread[4];
+        int numberOfPeople = 200000;
+        int rounds = 20;
+        int concurrentFactor = 1;
+        final int SINGLE_THREAD_OPTIMISE = 128;
 
-        HashSet<String> nameSet = new HashSet<>();
-        threads[0] = new Thread(()-> {
-            while(nameSet.size() < NUM_OF_PEOPLE) {
-                nameSet.add(randString(8));
-            }
-        });
-
-        HashSet<Integer> idSet = new HashSet<>();
-        threads[1] = new Thread(()-> {
-            for(int i = 0; i < NUM_OF_PEOPLE; i++) {
-                idSet.add(i);
-            }
-        });
-
-        HashSet<String> addressSet = new HashSet<>();
-        threads[2] = new Thread(()-> {
-            while(addressSet.size() < NUM_OF_PEOPLE) {
-                addressSet.add(randString(32));
-            }
-        });
-
-        HashSet<String> phoneSet = new HashSet<>();
-        threads[3] = new Thread(()-> {
-            while(phoneSet.size() < NUM_OF_PEOPLE) {
-                phoneSet.add(randNumberString(10));
-            }
-        });
-
-        long oldTime = curTime();
-        println("Starting threads...");
-        for(Thread t : threads) {
-            t.start();
-        }
+        println("Working with " + numberOfPeople + " people and " + rounds + " rounds.");
+        println("Working...");
+        println("Add StrictPeople average: " + addStrictPeople(rounds, numberOfPeople));
+        println("Add People average (1 thread): " + addPeople(rounds, numberOfPeople, 1));
+        println("Add People average (" + SINGLE_THREAD_OPTIMISE + " threads): " + addPeople(rounds, numberOfPeople, SINGLE_THREAD_OPTIMISE));
+        println("Remove StrictPeople average: " + removeStrictPeople(rounds, numberOfPeople));
+        println("Remove People average (1 thread): " + removePeople(rounds, numberOfPeople, 1));
+        println("Remove People average (" + SINGLE_THREAD_OPTIMISE + " threads): " + removePeople(rounds, numberOfPeople, SINGLE_THREAD_OPTIMISE));
 
 
-        print("Waiting for threads to finish");
-        for(Thread t : threads) {
-            try {
-                t.join();
-                print(".");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        long time = curTime();
         println();
-        println("Finished creating " + NUM_OF_PEOPLE + " sets in: " + (time - oldTime) + " milliseconds");
+        println("Working with " + numberOfPeople + " people and " + rounds + " rounds.");
 
-
-        Iterator<String> nameIter;
-        Iterator<Integer> idIter;
-        Iterator<String> addrIter;
-        Iterator<String> phoneIter;
-
-        // Test StrictPeople
-        strictPeople = new StrictPeople((int)(NUM_OF_PEOPLE*1.5), 0.75f);
-        nameIter = nameSet.iterator();
-        idIter = idSet.iterator();
-        addrIter = addressSet.iterator();
-        phoneIter = phoneSet.iterator();
-
-        oldTime = curTime();
-        for(int i = 0; i < NUM_OF_PEOPLE; i++) {
-            strictPeople.add(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()));
+        for(int i = 0; i < 4; i++) {
+            println("Add ConcurrentStrictPeople average: (" + concurrentFactor + " threads): " + addStrictPeopleConcurrent(rounds, numberOfPeople, concurrentFactor));
+            concurrentFactor *= 2;
         }
-        time = curTime();
-        println("Time to add to StrictPeople: " + (time-oldTime));
 
 
-        // Test People
-        people.close();
-        people = new People((int)(NUM_OF_PEOPLE*1.5), 0.75f, CONCURRENT_FACTOR);
-        nameIter = nameSet.iterator();
-        idIter = idSet.iterator();
-        addrIter = addressSet.iterator();
-        phoneIter = phoneSet.iterator();
-        oldTime = curTime();
-        for(int i = 0; i < NUM_OF_PEOPLE; i++) {
-            people.add(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()), true);
+        rounds = 25;
+        numberOfPeople = 200000;
+        concurrentFactor = 1;
+
+        println();
+        println("Working with " + numberOfPeople + " people and " + rounds + " rounds.");
+
+        for(int i = 0; i < 12; i++) {
+            println("Add ConcurrentPeople average: (" + concurrentFactor + " threads): " + addPeopleConcurrent(rounds, numberOfPeople, concurrentFactor));
+            concurrentFactor *= 2;
         }
-        time = curTime();
-        println("Time to add to People: " + (time-oldTime));
 
-        // Test StrictPeople
-        nameIter = nameSet.iterator();
-        idIter = idSet.iterator();
-        addrIter = addressSet.iterator();
-        phoneIter = phoneSet.iterator();
+        numberOfPeople = 200000;
+        rounds = 25;
+        concurrentFactor = 1;
 
-        oldTime = curTime();
-        for(int i = 0; i < NUM_OF_PEOPLE; i++) {
-            strictPeople.remove(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()));
+        println();
+        println("Working with " + numberOfPeople + " people and " + rounds + " rounds.");
+
+        for(int i = 0; i < 4; i++) {
+            println("Remove ConcurrentStrictPeople average: (" + concurrentFactor + " threads): " + removeStrictPeopleConcurrent(rounds, numberOfPeople, concurrentFactor));
+            concurrentFactor *= 2;
         }
-        time = curTime();
-        println("Time to remove from StrictPeople: " + (time-oldTime));
 
 
-        // Test People
-        nameIter = nameSet.iterator();
-        idIter = idSet.iterator();
-        addrIter = addressSet.iterator();
-        phoneIter = phoneSet.iterator();
-        oldTime = curTime();
-        for(int i = 0; i < NUM_OF_PEOPLE; i++) {
-            people.remove(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()));
+
+        rounds = 25;
+        numberOfPeople = 200000;
+        concurrentFactor = 1;
+
+        println();
+        println("Working with " + numberOfPeople + " people and " + rounds + " rounds.");
+
+        for(int i = 0; i < 12; i++) {
+            println("Remove ConcurrentPeople average: (" + concurrentFactor + " threads): " + removePeopleConcurrent(rounds, numberOfPeople, concurrentFactor));
+            concurrentFactor *= 2;
         }
-        time = curTime();
-        println("Time to add remove from People: " + (time-oldTime));
 
-        people.close();
+    }
+
+
+
+    static long addStrictPeopleConcurrent(int times, int numOfPeople, int threads) {
+
+        Thread[] threadsArr = new Thread[threads];
+        final AtomicBoolean startFlag = new AtomicBoolean(false);
+        final AtomicInteger threadCounter = new AtomicInteger(0);
+        StrictPeople strictPeople = new StrictPeople((int)(numOfPeople*1.5), 0.75f);
+        long oldTime, time, total = 0;
+
+        for(int round = 0; round < times; round++) {
+            Maps maps = new Maps(numOfPeople);
+            Iterator<String> nameIter = maps.getNameSet().iterator();
+            Iterator<Integer> idIter = maps.getIdSet().iterator();
+            Iterator<String> addrIter = maps.getAddressSet().iterator();
+            Iterator<String> phoneIter = maps.getPhoneSet().iterator();
+
+            //Split up the work for the threads
+            ArrayList<String>[] nameList =  new ArrayList[threads];
+            ArrayList<Integer>[] idList =  new ArrayList[threads];
+            ArrayList<String>[] addressList =  new ArrayList[threads];
+            ArrayList<String>[] phoneList =  new ArrayList[threads];
+
+            for(int i = 0; i < threads; i++) {
+                nameList[i] = new ArrayList<>();
+                idList[i] = new ArrayList<>();
+                addressList[i] = new ArrayList<>();
+                phoneList[i] = new ArrayList<>();
+            }
+
+            int index = 0;
+            ArrayList<String> curNameList;
+            ArrayList<Integer> curIdList;
+            ArrayList<String> curAddressList;
+            ArrayList<String> curPhoneList;
+            while(nameIter.hasNext()) {
+                curNameList = nameList[index];
+                curIdList = idList[index];
+                curAddressList = addressList[index];
+                curPhoneList = phoneList[index];
+
+                curNameList.add(nameIter.next());
+                curIdList.add(idIter.next());
+                curAddressList.add(addrIter.next());
+                curPhoneList.add(phoneIter.next());
+                if(index == threads-1) {
+                    index = 0;
+                } else {
+                    index++;
+                }
+            }
+            strictPeople.clear();
+            threadCounter.set(0);
+            for (int i = 0; i < threads; i++) {
+                int finalI = i;
+                threadsArr[i] = new Thread(() -> {
+                    ArrayList<String> threadNameList = new ArrayList<>(nameList[finalI]);
+                    ArrayList<Integer> threadIdList = new ArrayList<>(idList[finalI]);
+                    ArrayList<String> threadAddressList = new ArrayList<>(addressList[finalI]);
+                    ArrayList<String> threadPhoneList = new ArrayList<>(phoneList[finalI]);
+                    int size = threadNameList.size();
+
+                    Iterator<String> threadNameIter = threadNameList.iterator();
+                    Iterator<Integer> threadIdIter = threadIdList.iterator();
+                    Iterator<String> threadAddrIter = threadAddressList.iterator();
+                    Iterator<String> threadPhoneIter = threadPhoneList.iterator();
+
+                    // There is a race condition if threadCounter.incrementAndGet() is outside the synchronized block
+                    synchronized (startFlag) {
+                        threadCounter.incrementAndGet();
+                        try {
+                            startFlag.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    for (int j = 0; j < size; j++) {
+                        strictPeople.add(new Person(threadNameIter.next(), threadIdIter.next(), threadAddrIter.next(), threadPhoneIter.next()));
+                    }
+                    //println("Finished thread " + finalI);
+                });
+            }
+
+            for (Thread t : threadsArr) {
+                t.start();
+            }
+
+            oldTime = curTime();
+            while(threadCounter.get() < threads);
+            synchronized (startFlag) {
+                startFlag.notifyAll();
+            }
+
+            for (Thread t : threadsArr) {
+                try {
+                    t.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            time = curTime();
+            total += time-oldTime;
+        }
+        return (total/times);
+    }
+
+    static long addPeopleConcurrent(int times, int numOfPeople, int threads) {
+
+        Thread[] threadsArr = new Thread[threads];
+        final AtomicBoolean startFlag = new AtomicBoolean(false);
+        final AtomicInteger threadCounter = new AtomicInteger(0);
+        People people = new People((int)(numOfPeople*1.5), 0.75f, threads);
+        long oldTime, time, total = 0;
+
+        for(int round = 0; round < times; round++) {
+            Maps maps = new Maps(numOfPeople);
+            Iterator<String> nameIter = maps.getNameSet().iterator();
+            Iterator<Integer> idIter = maps.getIdSet().iterator();
+            Iterator<String> addrIter = maps.getAddressSet().iterator();
+            Iterator<String> phoneIter = maps.getPhoneSet().iterator();
+
+            //Split up the work for the threads
+            ArrayList<String>[] nameList =  new ArrayList[threads];
+            ArrayList<Integer>[] idList =  new ArrayList[threads];
+            ArrayList<String>[] addressList =  new ArrayList[threads];
+            ArrayList<String>[] phoneList =  new ArrayList[threads];
+
+            for(int i = 0; i < threads; i++) {
+                nameList[i] = new ArrayList<>();
+                idList[i] = new ArrayList<>();
+                addressList[i] = new ArrayList<>();
+                phoneList[i] = new ArrayList<>();
+            }
+
+            int threadArrayListIndex = 0;
+            ArrayList<String> curNameList;
+            ArrayList<Integer> curIdList;
+            ArrayList<String> curAddressList;
+            ArrayList<String> curPhoneList;
+            while(nameIter.hasNext()) {
+                curNameList = nameList[threadArrayListIndex];
+                curIdList = idList[threadArrayListIndex];
+                curAddressList = addressList[threadArrayListIndex];
+                curPhoneList = phoneList[threadArrayListIndex];
+
+                curNameList.add(nameIter.next());
+                curIdList.add(idIter.next());
+                curAddressList.add(addrIter.next());
+                curPhoneList.add(phoneIter.next());
+                if(threadArrayListIndex == threads-1) {
+                    threadArrayListIndex = 0;
+                } else {
+                    threadArrayListIndex++;
+                }
+            }
+            people.clear();
+            threadCounter.set(0);
+            for (int i = 0; i < threads; i++) {
+                int finalI = i;
+                threadsArr[i] = new Thread(() -> {
+                    ArrayList<String> threadNameList = new ArrayList<>(nameList[finalI]);
+                    ArrayList<Integer> threadIdList = new ArrayList<>(idList[finalI]);
+                    ArrayList<String> threadAddressList = new ArrayList<>(addressList[finalI]);
+                    ArrayList<String> threadPhoneList = new ArrayList<>(phoneList[finalI]);
+                    int size = threadNameList.size();
+
+                    Iterator<String> threadNameIter = threadNameList.iterator();
+                    Iterator<Integer> threadIdIter = threadIdList.iterator();
+                    Iterator<String> threadAddrIter = threadAddressList.iterator();
+                    Iterator<String> threadPhoneIter = threadPhoneList.iterator();
+
+                    // There is a race condition if threadCounter.incrementAndGet() is outside the synchronized block
+                    synchronized (startFlag) {
+                        int count = threadCounter.incrementAndGet();
+                        if(count == threads) {
+                            synchronized (threadCounter) {
+                                threadCounter.notifyAll();
+                            }
+                        }
+                        try {
+                            startFlag.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    for (int j = 0; j < size; j++) {
+                        people.add(new Person(threadNameIter.next(), threadIdIter.next(), threadAddrIter.next(), threadPhoneIter.next()));
+                    }
+                    //println("Finished thread " + finalI);
+                });
+            }
+
+            for (Thread t : threadsArr) {
+                t.start();
+            }
+
+            oldTime = curTime();
+            synchronized (threadCounter) {
+                try {
+                    threadCounter.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            synchronized (startFlag) {
+                startFlag.notifyAll();
+            }
+
+            for (Thread t : threadsArr) {
+                try {
+                    t.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            time = curTime();
+            total += time-oldTime;
+        }
+        return (total/times);
+    }
+
+    static long removeStrictPeopleConcurrent(int times, int numOfPeople, int threads) {
+        Thread[] threadsArr = new Thread[threads];
+        final AtomicBoolean startFlag = new AtomicBoolean(false);
+        final AtomicInteger threadCounter = new AtomicInteger(0);
+        StrictPeople strictPeople = new StrictPeople((int)(numOfPeople*1.5), 0.75f);
+        long oldTime, time, total = 0;
+
+        for(int round = 0; round < times; round++) {
+            Maps maps = new Maps(numOfPeople);
+            Iterator<String> nameIter = maps.getNameSet().iterator();
+            Iterator<Integer> idIter = maps.getIdSet().iterator();
+            Iterator<String> addrIter = maps.getAddressSet().iterator();
+            Iterator<String> phoneIter = maps.getPhoneSet().iterator();
+
+            //Split up the work for the threads
+            ArrayList<String>[] nameList =  new ArrayList[threads];
+            ArrayList<Integer>[] idList =  new ArrayList[threads];
+            ArrayList<String>[] addressList =  new ArrayList[threads];
+            ArrayList<String>[] phoneList =  new ArrayList[threads];
+
+            for(int i = 0; i < threads; i++) {
+                nameList[i] = new ArrayList<>();
+                idList[i] = new ArrayList<>();
+                addressList[i] = new ArrayList<>();
+                phoneList[i] = new ArrayList<>();
+            }
+
+            int index = 0;
+            ArrayList<String> curNameList;
+            ArrayList<Integer> curIdList;
+            ArrayList<String> curAddressList;
+            ArrayList<String> curPhoneList;
+            while(nameIter.hasNext()) {
+                curNameList = nameList[index];
+                curIdList = idList[index];
+                curAddressList = addressList[index];
+                curPhoneList = phoneList[index];
+
+                curNameList.add(nameIter.next());
+                curIdList.add(idIter.next());
+                curAddressList.add(addrIter.next());
+                curPhoneList.add(phoneIter.next());
+                if(index == threads-1) {
+                    index = 0;
+                } else {
+                    index++;
+                }
+            }
+            strictPeople.clear();
+            threadCounter.set(0);
+            for (int i = 0; i < threads; i++) {
+                int finalI = i;
+                threadsArr[i] = new Thread(() -> {
+                    ArrayList<String> threadNameList = new ArrayList<>(nameList[finalI]);
+                    ArrayList<Integer> threadIdList = new ArrayList<>(idList[finalI]);
+                    ArrayList<String> threadAddressList = new ArrayList<>(addressList[finalI]);
+                    ArrayList<String> threadPhoneList = new ArrayList<>(phoneList[finalI]);
+                    int size = threadNameList.size();
+
+                    Iterator<String> threadNameIter = threadNameList.iterator();
+                    Iterator<Integer> threadIdIter = threadIdList.iterator();
+                    Iterator<String> threadAddrIter = threadAddressList.iterator();
+                    Iterator<String> threadPhoneIter = threadPhoneList.iterator();
+
+                    for (int j = 0; j < size; j++) {
+                        strictPeople.add(new Person(threadNameIter.next(), threadIdIter.next(), threadAddrIter.next(), threadPhoneIter.next()));
+                    }
+
+                    // There is a race condition if threadCounter.incrementAndGet() is outside the synchronized block
+                    synchronized (startFlag) {
+                        threadCounter.incrementAndGet();
+                        try {
+                            startFlag.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    threadNameIter = threadNameList.iterator();
+                    threadIdIter = threadIdList.iterator();
+                    threadAddrIter = threadAddressList.iterator();
+                    threadPhoneIter = threadPhoneList.iterator();
+
+                    for (int j = 0; j < size; j++) {
+                        strictPeople.remove(new Person(threadNameIter.next(), threadIdIter.next(), threadAddrIter.next(), threadPhoneIter.next()));
+                    }
+
+                });
+            }
+
+            for (Thread t : threadsArr) {
+                t.start();
+            }
+
+            oldTime = curTime();
+            while(threadCounter.get() < threads);
+            synchronized (startFlag) {
+                startFlag.notifyAll();
+            }
+
+            for (Thread t : threadsArr) {
+                try {
+                    t.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            time = curTime();
+            total += time-oldTime;
+        }
+        return (total/times);
+    }
+    static long removePeopleConcurrent(int times, int numOfPeople, int threads) {
+        Thread[] threadsArr = new Thread[threads];
+        final AtomicBoolean startFlag = new AtomicBoolean(false);
+        final AtomicInteger threadCounter = new AtomicInteger(0);
+        People people = new People((int)(numOfPeople*1.5), 0.75f, threads);
+        long oldTime, time, total = 0;
+
+        for(int round = 0; round < times; round++) {
+            Maps maps = new Maps(numOfPeople);
+            Iterator<String> nameIter = maps.getNameSet().iterator();
+            Iterator<Integer> idIter = maps.getIdSet().iterator();
+            Iterator<String> addrIter = maps.getAddressSet().iterator();
+            Iterator<String> phoneIter = maps.getPhoneSet().iterator();
+
+            //Split up the work for the threads
+            ArrayList<String>[] nameList =  new ArrayList[threads];
+            ArrayList<Integer>[] idList =  new ArrayList[threads];
+            ArrayList<String>[] addressList =  new ArrayList[threads];
+            ArrayList<String>[] phoneList =  new ArrayList[threads];
+
+            for(int i = 0; i < threads; i++) {
+                nameList[i] = new ArrayList<>();
+                idList[i] = new ArrayList<>();
+                addressList[i] = new ArrayList<>();
+                phoneList[i] = new ArrayList<>();
+            }
+
+            int threadArrayListIndex = 0;
+            ArrayList<String> curNameList;
+            ArrayList<Integer> curIdList;
+            ArrayList<String> curAddressList;
+            ArrayList<String> curPhoneList;
+            while(nameIter.hasNext()) {
+                curNameList = nameList[threadArrayListIndex];
+                curIdList = idList[threadArrayListIndex];
+                curAddressList = addressList[threadArrayListIndex];
+                curPhoneList = phoneList[threadArrayListIndex];
+
+                curNameList.add(nameIter.next());
+                curIdList.add(idIter.next());
+                curAddressList.add(addrIter.next());
+                curPhoneList.add(phoneIter.next());
+                if(threadArrayListIndex == threads-1) {
+                    threadArrayListIndex = 0;
+                } else {
+                    threadArrayListIndex++;
+                }
+            }
+            people.clear();
+            threadCounter.set(0);
+            for (int i = 0; i < threads; i++) {
+                int finalI = i;
+                threadsArr[i] = new Thread(() -> {
+                    ArrayList<String> threadNameList = new ArrayList<>(nameList[finalI]);
+                    ArrayList<Integer> threadIdList = new ArrayList<>(idList[finalI]);
+                    ArrayList<String> threadAddressList = new ArrayList<>(addressList[finalI]);
+                    ArrayList<String> threadPhoneList = new ArrayList<>(phoneList[finalI]);
+                    int size = threadNameList.size();
+
+                    Iterator<String> threadNameIter = threadNameList.iterator();
+                    Iterator<Integer> threadIdIter = threadIdList.iterator();
+                    Iterator<String> threadAddrIter = threadAddressList.iterator();
+                    Iterator<String> threadPhoneIter = threadPhoneList.iterator();
+
+                    for (int j = 0; j < size; j++) {
+                        people.add(new Person(threadNameIter.next(), threadIdIter.next(), threadAddrIter.next(), threadPhoneIter.next()));
+                    }
+
+                    // There is a race condition if threadCounter.incrementAndGet() is outside the synchronized block
+                    synchronized (startFlag) {
+                        int count = threadCounter.incrementAndGet();
+                        if(count == threads) {
+                            synchronized (threadCounter) {
+                                threadCounter.notifyAll();
+                            }
+                        }
+                        try {
+                            startFlag.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+
+                    threadNameIter = threadNameList.iterator();
+                    threadIdIter = threadIdList.iterator();
+                    threadAddrIter = threadAddressList.iterator();
+                    threadPhoneIter = threadPhoneList.iterator();
+                    for (int j = 0; j < size; j++) {
+                        people.remove(new Person(threadNameIter.next(), threadIdIter.next(), threadAddrIter.next(), threadPhoneIter.next()));
+                    }
+                });
+            }
+
+            for (Thread t : threadsArr) {
+                t.start();
+            }
+
+            oldTime = curTime();
+            synchronized (threadCounter) {
+                try {
+                    threadCounter.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            synchronized (startFlag) {
+                startFlag.notifyAll();
+            }
+
+            for (Thread t : threadsArr) {
+                try {
+                    t.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            time = curTime();
+            total += time-oldTime;
+        }
+        return (total/times);
+    }
+
+
+    /*
+     * Single threaded tests
+     */
+    static long addStrictPeople(int times, int numOfPeople) {
+        StrictPeople strictPeople = new StrictPeople((int)(numOfPeople*1.5), 0.75f);
+        long oldTime, time, total = 0;
+
+        for(int outer = 0; outer < times; outer++) {
+            Maps maps = new Maps(numOfPeople);
+            Iterator<String> nameIter = maps.getNameSet().iterator();
+            Iterator<Integer> idIter = maps.getIdSet().iterator();
+            Iterator<String> addrIter = maps.getAddressSet().iterator();
+            Iterator<String> phoneIter = maps.getPhoneSet().iterator();
+            strictPeople.clear();
+            oldTime = curTime();
+            for (int i = 0; i < numOfPeople; i++) {
+                strictPeople.add(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()));
+            }
+            time = curTime();
+            total += time-oldTime;
+            //println(time-oldTime);
+        }
+        return (total/times);
+    }
+    static long addPeople(int times, int numOfPeople, int threads) {
+        long oldTime, time, total = 0;
+        People people = new People((int) (numOfPeople * 1.5), 0.75f, threads);
+
+        for(int outer = 0; outer < times; outer++) {
+            Maps maps = new Maps(numOfPeople);
+            Iterator<String> nameIter = maps.getNameSet().iterator();
+            Iterator<Integer> idIter = maps.getIdSet().iterator();
+            Iterator<String> addrIter = maps.getAddressSet().iterator();
+            Iterator<String> phoneIter = maps.getPhoneSet().iterator();
+            people.clear();
+            oldTime = curTime();
+            for (int i = 0; i < numOfPeople; i++) {
+                people.add(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()));
+            }
+            time = curTime();
+            total += time-oldTime;
+            //println(time-oldTime);
+        }
+        return total/times;
+    }
+
+    static long removeStrictPeople(int times, int numOfPeople) {
+        long oldTime, time, total = 0;
+        StrictPeople strictPeople = new StrictPeople(numOfPeople, 0.75f);
+
+        for(int outer = 0; outer < times; outer++) {
+            Maps maps = new Maps(numOfPeople);
+            Iterator<String> nameIter = maps.getNameSet().iterator();
+            Iterator<Integer> idIter = maps.getIdSet().iterator();
+            Iterator<String> addrIter = maps.getAddressSet().iterator();
+            Iterator<String> phoneIter = maps.getPhoneSet().iterator();
+            strictPeople.clear();
+            for (int i = 0; i < numOfPeople; i++) {
+                strictPeople.add(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()));
+            }
+
+            nameIter = maps.getNameSet().iterator();
+            idIter = maps.getIdSet().iterator();
+            addrIter = maps.getAddressSet().iterator();
+            phoneIter = maps.getPhoneSet().iterator();
+
+            oldTime = curTime();
+            for (int i = 0; i < numOfPeople; i++) {
+                strictPeople.remove(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()));
+            }
+            time = curTime();
+            total += time-oldTime;
+            //println(time-oldTime);
+        }
+        return (total/times);
+    }
+
+    static long removePeople(int times, int numOfPeople, int threads) {
+        long oldTime, time, total = 0;
+        People people = new People((int)(numOfPeople*1.5), 0.75f, threads);
+
+        for(int outer = 0; outer < times; outer++) {
+            Maps maps = new Maps(numOfPeople);
+            Iterator<String> nameIter = maps.getNameSet().iterator();
+            Iterator<Integer> idIter = maps.getIdSet().iterator();
+            Iterator<String> addrIter = maps.getAddressSet().iterator();
+            Iterator<String> phoneIter = maps.getPhoneSet().iterator();
+            people.clear();
+
+            for (int i = 0; i < numOfPeople; i++) {
+                people.add(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()));
+            }
+            nameIter = maps.getNameSet().iterator();
+            idIter = maps.getIdSet().iterator();
+            addrIter = maps.getAddressSet().iterator();
+            phoneIter = maps.getPhoneSet().iterator();
+
+            oldTime = curTime();
+            for (int i = 0; i < numOfPeople; i++) {
+                people.remove(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()));
+            }
+            time = curTime();
+            total += time-oldTime;
+            //println(time-oldTime);
+        }
+        return (total/times);
+    }
+
+    static class Maps {
+        private Thread[] threads = new Thread[4];
+        private final HashSet<String> nameSet = new HashSet<>();
+        private final HashSet<Integer> idSet = new HashSet<>();
+        private final HashSet<String> addressSet = new HashSet<>();
+        private final HashSet<String> phoneSet = new HashSet<>();
+        private final int NUM_OF_PEOPLE;
+        private long prevTime;
+
+        public Maps(int num) {
+            NUM_OF_PEOPLE = num;
+            generate();
+        }
+
+        public void generate() {
+            nameSet.clear();
+            idSet.clear();
+            addressSet.clear();
+            phoneSet.clear();
+
+            threads[0] = new Thread(() -> {
+                while (nameSet.size() < NUM_OF_PEOPLE) {
+                    nameSet.add(randString(8));
+                }
+            });
+
+            threads[1] = new Thread(() -> {
+                for (int i = 0; i < NUM_OF_PEOPLE; i++) {
+                    idSet.add(i);
+                }
+            });
+
+            threads[2] = new Thread(() -> {
+                while (addressSet.size() < NUM_OF_PEOPLE) {
+                    addressSet.add(randString(32));
+                }
+            });
+
+            threads[3] = new Thread(() -> {
+                while (phoneSet.size() < NUM_OF_PEOPLE) {
+                    phoneSet.add(randNumberString(10));
+                }
+            });
+            long oldTime = curTime();
+            for(Thread t : threads) {
+                t.start();
+            }
+
+
+            for(Thread t : threads) {
+                try {
+                    t.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            long time = curTime();
+            prevTime = time-oldTime;
+        }
+
+        public long getPrevTime() {
+            return prevTime;
+        }
+
+        public HashSet<String> getNameSet() {
+            return nameSet;
+        }
+        public HashSet<Integer> getIdSet() {
+            return idSet;
+        }
+        public HashSet<String> getAddressSet() {
+            return addressSet;
+        }
+        public HashSet<String> getPhoneSet() {
+            return phoneSet;
+        }
+
 
     }
 
@@ -235,7 +830,7 @@ public class Main {
         Person me4 = new Person("Jeremy", 3, "456 Street rd", "0123456789");
 
 
-        if(!people.add(me, true)) {
+        if(!people.add(me)) {
             println("Something went wrong");
             return false;
         }
@@ -285,5 +880,6 @@ public class Main {
 
         return true;
     }
+
 
 }
