@@ -11,7 +11,7 @@ public class People {
     final private ConcurrentHashMap<Integer, Person> idMap;
     final private ConcurrentHashMap<String, Person> addressMap;
     final private ConcurrentHashMap<String, Person> phoneMap;
-    final private int concurrentFactor;
+    final protected int concurrentFactor;
 
     final private ReentrantReadWriteLock rwlock = new ReentrantReadWriteLock();
 
@@ -25,7 +25,6 @@ public class People {
         this(initialCapacity, loadFactor, 16);
     }
     public People(int initialCapacity, float loadFactor, int concurrentFactor) {
-        concurrentFactor *= 2;
         nameMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
         idMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
         addressMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);

@@ -28,7 +28,7 @@ public class Main {
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
                 .toString();
     }
-        public static <T> void println(T var) {
+    public static <T> void println(T var) {
         System.out.println(var);
     }
     public static <T> void println() {
@@ -47,11 +47,8 @@ public class Main {
             return;
         }
 
-        StrictPeople strictPeople = new StrictPeople();
-        People people = new People();
-
-        int numberOfPeople = 200000;
-        int rounds = 20;
+        int numberOfPeople = 50000;
+        int rounds = 60;
         int concurrentFactor = 1;
         final int SINGLE_THREAD_OPTIMISE = 128;
 
@@ -60,9 +57,13 @@ public class Main {
         println("Add StrictPeople average: " + addStrictPeople(rounds, numberOfPeople));
         println("Add People average (1 thread): " + addPeople(rounds, numberOfPeople, 1));
         println("Add People average (" + SINGLE_THREAD_OPTIMISE + " threads): " + addPeople(rounds, numberOfPeople, SINGLE_THREAD_OPTIMISE));
+        println("Add People2 average (1 thread): " + addPeople2(rounds, numberOfPeople, 1));
+        println("Add People2 average (" + SINGLE_THREAD_OPTIMISE + " threads): " + addPeople2(rounds, numberOfPeople, SINGLE_THREAD_OPTIMISE));
         println("Remove StrictPeople average: " + removeStrictPeople(rounds, numberOfPeople));
         println("Remove People average (1 thread): " + removePeople(rounds, numberOfPeople, 1));
         println("Remove People average (" + SINGLE_THREAD_OPTIMISE + " threads): " + removePeople(rounds, numberOfPeople, SINGLE_THREAD_OPTIMISE));
+        println("Remove People2 average (1 thread): " + removePeople2(rounds, numberOfPeople, 1));
+        println("Remove People2 average (" + SINGLE_THREAD_OPTIMISE + " threads): " + removePeople2(rounds, numberOfPeople, SINGLE_THREAD_OPTIMISE));
 
 
         println();
@@ -618,6 +619,27 @@ public class Main {
         }
         return total/times;
     }
+    static long addPeople2(int times, int numOfPeople, int threads) {
+        long oldTime, time, total = 0;
+        People2 people = new People2((int) (numOfPeople * 1.5), 0.75f, threads);
+
+        for(int outer = 0; outer < times; outer++) {
+            Maps maps = new Maps(numOfPeople);
+            Iterator<String> nameIter = maps.getNameSet().iterator();
+            Iterator<Integer> idIter = maps.getIdSet().iterator();
+            Iterator<String> addrIter = maps.getAddressSet().iterator();
+            Iterator<String> phoneIter = maps.getPhoneSet().iterator();
+            people.clear();
+            oldTime = curTime();
+            for (int i = 0; i < numOfPeople; i++) {
+                people.add(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()));
+            }
+            time = curTime();
+            total += time-oldTime;
+            //println(time-oldTime);
+        }
+        return total/times;
+    }
 
     static long removeStrictPeople(int times, int numOfPeople) {
         long oldTime, time, total = 0;
@@ -653,6 +675,36 @@ public class Main {
     static long removePeople(int times, int numOfPeople, int threads) {
         long oldTime, time, total = 0;
         People people = new People((int)(numOfPeople*1.5), 0.75f, threads);
+
+        for(int outer = 0; outer < times; outer++) {
+            Maps maps = new Maps(numOfPeople);
+            Iterator<String> nameIter = maps.getNameSet().iterator();
+            Iterator<Integer> idIter = maps.getIdSet().iterator();
+            Iterator<String> addrIter = maps.getAddressSet().iterator();
+            Iterator<String> phoneIter = maps.getPhoneSet().iterator();
+            people.clear();
+
+            for (int i = 0; i < numOfPeople; i++) {
+                people.add(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()));
+            }
+            nameIter = maps.getNameSet().iterator();
+            idIter = maps.getIdSet().iterator();
+            addrIter = maps.getAddressSet().iterator();
+            phoneIter = maps.getPhoneSet().iterator();
+
+            oldTime = curTime();
+            for (int i = 0; i < numOfPeople; i++) {
+                people.remove(new Person(nameIter.next(), idIter.next(), addrIter.next(), phoneIter.next()));
+            }
+            time = curTime();
+            total += time-oldTime;
+            //println(time-oldTime);
+        }
+        return (total/times);
+    }
+    static long removePeople2(int times, int numOfPeople, int threads) {
+        long oldTime, time, total = 0;
+        People2 people = new People2((int)(numOfPeople*1.5), 0.75f, threads);
 
         for(int outer = 0; outer < times; outer++) {
             Maps maps = new Maps(numOfPeople);
