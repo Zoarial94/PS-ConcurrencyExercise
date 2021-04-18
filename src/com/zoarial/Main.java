@@ -54,30 +54,18 @@ public class Main {
             return;
         }
 
-        final int NUM_OF_PEOPLE = 500000;
-        final int ROUNDS = 40;
+        final int NUM_OF_PEOPLE = 200000;
+        final int ROUNDS = 100;
         int concurrentFactor = 1;               // concurrentFactor is used to in the multithreaded tests to determine how many threads to use
-        final int SINGLE_THREAD_OPTIMISE = 128; // This is to set the concurrentFactor in the concurrentHashMaps inside the People classes. It does not actually determine how many threads are used.
         maps = new Maps(NUM_OF_PEOPLE);         // Created the shared set of data
 
         // Turns out, in corretto 11 concurrentFactor does nothing in ConcurrentHashMap
         println("Working with " + NUM_OF_PEOPLE + " people and " + ROUNDS + " rounds.");
         println("Working...");
         println("Add StrictPeople average: " + addPeopleInterface(new StrictPeople(NUM_OF_PEOPLE, 0.75f), ROUNDS));
-        println("Add People average (1 thread): " + addPeopleInterface(new People(NUM_OF_PEOPLE, 0.75f, 1), ROUNDS));
-        println("Add People average (" + SINGLE_THREAD_OPTIMISE + " threads): " + addPeopleInterface(new People(NUM_OF_PEOPLE, 0.75f, SINGLE_THREAD_OPTIMISE), ROUNDS));
-        println("Add People2 average (1 thread): " + addPeopleInterface(new People2(NUM_OF_PEOPLE, 0.75f, 1), ROUNDS));
-        println("Add People2 average (" + SINGLE_THREAD_OPTIMISE + " threads): " + addPeopleInterface(new People2(NUM_OF_PEOPLE, 0.75f, SINGLE_THREAD_OPTIMISE), ROUNDS));
-        println("Add People3 average (1 thread): " + addPeopleInterface(new People3(NUM_OF_PEOPLE, 0.75f, 1), ROUNDS));
-        println("Add People3 average (" + SINGLE_THREAD_OPTIMISE + " threads): " + addPeopleInterface(new People3(NUM_OF_PEOPLE, 0.75f, SINGLE_THREAD_OPTIMISE), ROUNDS));
+        println("Add People average: " + addPeopleInterface(new People(NUM_OF_PEOPLE, 0.75f), ROUNDS));
         println("Remove StrictPeople average: " + removePeopleInterface(new StrictPeople(NUM_OF_PEOPLE, 0.75f), ROUNDS));
-        println("Remove People average (1 thread): " + removePeopleInterface(new People(NUM_OF_PEOPLE, 0.75f, 1), ROUNDS));
-        println("Remove People average (" + SINGLE_THREAD_OPTIMISE + " threads): " + removePeopleInterface(new People(NUM_OF_PEOPLE, 0.75f, SINGLE_THREAD_OPTIMISE), ROUNDS));
-        println("Remove People2 average (1 thread): " + removePeopleInterface(new People2(NUM_OF_PEOPLE, 0.75f, 1), ROUNDS));
-        println("Remove People2 average (" + SINGLE_THREAD_OPTIMISE + " threads): " + removePeopleInterface(new People2(NUM_OF_PEOPLE, 0.75f, SINGLE_THREAD_OPTIMISE), ROUNDS));
-        println("Remove People3 average (1 thread): " + removePeopleInterface(new People3(NUM_OF_PEOPLE, 0.75f, 1), ROUNDS));
-        println("Remove People3 average (" + SINGLE_THREAD_OPTIMISE + " threads): " + removePeopleInterface(new People3(NUM_OF_PEOPLE, 0.75f, SINGLE_THREAD_OPTIMISE), ROUNDS));
-
+        println("Remove People average: " + removePeopleInterface(new People(NUM_OF_PEOPLE, 0.75f), ROUNDS));
 
 
         println();
@@ -92,25 +80,7 @@ public class Main {
         println();
         println("Working with " + NUM_OF_PEOPLE + " people and " + ROUNDS + " rounds.");
         for(int i = 0; i < 12; i++) {
-            println("Add ConcurrentPeople average: (" + concurrentFactor + " threads): " + concurrentAddPeopleInterface(new People(NUM_OF_PEOPLE, 0.75f, concurrentFactor), ROUNDS, concurrentFactor));
-            concurrentFactor *= 2;
-        }
-
-        concurrentFactor = 1;
-
-        println();
-        println("Working with " + NUM_OF_PEOPLE + " people and " + ROUNDS + " rounds.");
-        for(int i = 0; i < 12; i++) {
-            println("Add ConcurrentPeople2 average: (" + concurrentFactor + " threads): " + concurrentAddPeopleInterface(new People2(NUM_OF_PEOPLE, 0.75f, concurrentFactor), ROUNDS, concurrentFactor));
-            concurrentFactor *= 2;
-        }
-
-        concurrentFactor = 1;
-
-        println();
-        println("Working with " + NUM_OF_PEOPLE + " people and " + ROUNDS + " rounds.");
-        for(int i = 0; i < 12; i++) {
-            println("Add ConcurrentPeople3 average: (" + concurrentFactor + " threads): " + concurrentAddPeopleInterface(new People3(NUM_OF_PEOPLE, 0.75f, concurrentFactor), ROUNDS, concurrentFactor));
+            println("Add ConcurrentPeople average: (" + concurrentFactor + " threads): " + concurrentAddPeopleInterface(new People(NUM_OF_PEOPLE, 0.75f), ROUNDS, concurrentFactor));
             concurrentFactor *= 2;
         }
 
@@ -128,28 +98,9 @@ public class Main {
         println();
         println("Working with " + NUM_OF_PEOPLE + " people and " + ROUNDS + " rounds.");
         for(int i = 0; i < 12; i++) {
-            println("Remove ConcurrentPeople average: (" + concurrentFactor + " threads): " + concurrentRemovePeopleInterface(new People(NUM_OF_PEOPLE, 0.75f, concurrentFactor), ROUNDS, concurrentFactor));
+            println("Remove ConcurrentPeople average: (" + concurrentFactor + " threads): " + concurrentRemovePeopleInterface(new People(NUM_OF_PEOPLE, 0.75f), ROUNDS, concurrentFactor));
             concurrentFactor *= 2;
         }
-
-        concurrentFactor = 1;
-
-        println();
-        println("Working with " + NUM_OF_PEOPLE + " people and " + ROUNDS + " rounds.");
-        for(int i = 0; i < 12; i++) {
-            println("Remove ConcurrentPeople2 average: (" + concurrentFactor + " threads): " + concurrentRemovePeopleInterface(new People2(NUM_OF_PEOPLE, 0.75f, concurrentFactor), ROUNDS, concurrentFactor));
-            concurrentFactor *= 2;
-        }
-
-        concurrentFactor = 1;
-
-        println();
-        println("Working with " + NUM_OF_PEOPLE + " people and " + ROUNDS + " rounds.");
-        for(int i = 0; i < 12; i++) {
-            println("Remove ConcurrentPeople3 average: (" + concurrentFactor + " threads): " + concurrentRemovePeopleInterface(new People3(NUM_OF_PEOPLE, 0.75f, concurrentFactor), ROUNDS, concurrentFactor));
-            concurrentFactor *= 2;
-        }
-
     }
 
 

@@ -14,7 +14,6 @@ public class People implements PeopleInterface {
     final private ConcurrentHashMap<Integer, Person> idMap;
     final private ConcurrentHashMap<String, Person> addressMap;
     final private ConcurrentHashMap<String, Person> phoneMap;
-    final protected int concurrentFactor; // For copy constructor
 
     final private ReentrantReadWriteLock rwlock = new ReentrantReadWriteLock();
 
@@ -26,21 +25,13 @@ public class People implements PeopleInterface {
         this(initialCapacity, 0.75f);
     }
     public People(int initialCapacity, float loadFactor) {
-        this(initialCapacity, loadFactor, 16);
-    }
-    public People(int initialCapacity, float loadFactor, int concurrentFactor) {
-        nameMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
-        idMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
-        addressMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
-        phoneMap = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrentFactor);
-        this.concurrentFactor = concurrentFactor;
+        nameMap = new ConcurrentHashMap<>(initialCapacity, loadFactor);
+        idMap = new ConcurrentHashMap<>(initialCapacity, loadFactor);
+        addressMap = new ConcurrentHashMap<>(initialCapacity, loadFactor);
+        phoneMap = new ConcurrentHashMap<>(initialCapacity, loadFactor);
     }
 
-    // Copy constructors
     public People(People oldPeople) {
-        this(oldPeople, oldPeople.concurrentFactor);
-    }
-    public People(People oldPeople, int concurrentFactor) {
         // Use a write lock to make sure have ALL the data since the lock
         // There are modifying functions that use the read lock
         oldPeople.rwlock.writeLock().lock();
@@ -48,7 +39,6 @@ public class People implements PeopleInterface {
         idMap = new ConcurrentHashMap<>(oldPeople.idMap);
         addressMap = new ConcurrentHashMap<>(oldPeople.addressMap);
         phoneMap = new ConcurrentHashMap<>(oldPeople.phoneMap);
-        this.concurrentFactor = concurrentFactor;
         oldPeople.rwlock.writeLock().unlock();
     }
 
