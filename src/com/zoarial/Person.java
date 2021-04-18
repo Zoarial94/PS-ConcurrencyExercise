@@ -1,7 +1,7 @@
 package com.zoarial;
 
 // This class just holds information about one person
-public class Person {
+public class Person implements Comparable<Person> {
 
     final private String name;
     final private int id;
@@ -29,5 +29,11 @@ public class Person {
 
     public String getPhoneNumber() {
         return phoneNumber;
+    }
+
+    // This may assist in HashMap ordering when there is a collision
+    @Override
+    public int compareTo(Person o) {
+        return Integer.compare(this.id, o.id);
     }
 }
